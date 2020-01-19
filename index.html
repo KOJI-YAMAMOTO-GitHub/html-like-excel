@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <style type="text/css">
+    </style>
+    <script type="text/javascript">
+
+        //行数保持変数
+        var lineNumber = 0;
+
+        /**
+        *ファイルダウンロードメソッド
+        */
+        function onClickDownload() {
+
+            //ファイルに出力する値を保持する変数
+            var result = "";
+
+            //ファイル名
+            const filename = document.getElementById('downloadFileNmae').value;
+            //ファイル名に値がない場合
+            if (filename === "") {
+                document.getElementById("errormessage").textContent = "ファイル名が未入力です。";
+                return;
+            }
+
+            //行数分ループ
+            for (var i = 0; i < lineNumber; i++) {
+
+                //取得するタグのid名生成
+                var idName = "record" + (i + 1);
+
+                //該当のidが存在しなかった場合
+                if (!document.getElementById(idName)) {
+                    console.log("id = " + idName + " が存在しませんでした。処理をが終了します。");
+                    break;
+                }
+
+                console.log((i + 1) + "行目の処理を開始しました。");
+
+                //行内の値を保持する変数
+                var valueList = [];
+
+                //エラーメッセージを保持する変数
+                var errormessage = "";
+
+                //項目から値を取得する(項目数を増やした場合は、このループ数もそれに併せて増やす必要有)
+                for (var j = 0; j < 5; j++) {
+                    //取得するタグのclass名生成
+                    var className = "text" + (j + 1);
+                    //取得した値を保持する変数
+                    var value = "";
+
+                    //該当のclass名が存在した場合
+                    if (document.getElementById(idName).getElementsByClassName(className)[0]) {
+                        //class名に紐づく値を取得
+                        value = document.getElementById(idName).getElementsByClassName(className)[0].value;
+                        //配列に取得した値を格納
+                        valueList.push(value);
+                    }
+
+                    //空が設定されていた場合
+                    if (!value) {
+                        errormessage = "値が設定されていない項目があります。";
+                        document.getElementById("errormessage").innerHTML = "値が設定されていない項目があります。";
+                        break;
+                    }
+                    console.log(idName + "." + className + " = " + value);
+                }
+
+                console.log(valueList);
+
+                //取得した値をカンマ区切りで文字列結合(項目数を増やした場合は、これもそれに併せて増やす必要有)
+                var valuesString =
+                    valueList[0] + "," +
+                    valueList[1] + "," +
+                    valueList[2] + "," +
+                    valueList[3] + "," +
+                    valueList[4] +
+                    "\r\n";
+
+                console.log(valuesString);
+
+                //ファイルに出力する為の値に設定
+                result = result + valuesString;
+            }
+            console.log(result);
+
+            //エラーメッセージが存在しない場合
+            if (errormessage === "") {
+                // ファイル出力
+                outputFile(result, filename);
+            } else {
+                //エラーメッセージを出力
+                document.getElementById("errormessage").innerHTML = errormessage;
+            }
+        }
+
+        /**
+        * ファイル出力処理
+        * @param {string} value ファイルに出力する値
+        * @param {string} filename ファイル名
+        */
+        function outputFile(value, filename) {
+
+            var blob = new Blob([value], { "type": "text/plain" });
+
+            // Internet exproerの場合
+            if (window.navigator.msSaveBlob) {
+                window.navigator.msSaveBlob(blob, filename);
+            } else {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+        }
+
+        /**
+        *行追加メソッド
+        */
+        function addRecord() {
+            //行ナンバーをカウントアップ
+            lineNumber++;
+
+            //追加する箇所タグを取得
+            var baseLineElement = document.getElementById('baseLine');
+
+            //追加するタグ
+            var addTag = "<tr id=record" +
+                lineNumber +
+                "><td><input class=text1 type=text name=name size=15 /></td>" +
+                "<td><input class=text2 type=text name=name size=15 value=text2 /></td>" +
+                "<td><input class=text3 type=text name=name size=15 /></td>" +
+                "<td>" +
+                "<select name=text4 size=1 class=text4>" +
+                "<option value=TRUE selected>TRUE</option>" +
+                "<option value=FALSE>FALSE</option>" +
+                "</select>" +
+                "</td>" +
+                "<td><input class=text5 type=text name=name size=15 /></td>" +
+                "</tr>";
+
+            //タグを追加
+            baseLineElement.insertAdjacentHTML('beforebegin', addTag);
+        }
+
+        /**
+        *ファイル読み込みメソッド
+        */
+        function inputFile() {
+            //ファイル読み込み
+            var uploadFile = document.getElementById("inputFile");
+
+            console.log(uploadFile);
+
+            //読み込んだファイルの内容の出力先
+            var outFrame = document.getElementById('errormessage');
+
+            //ファイル内に1行以上文字列がある場合
+            if (1 <= uploadFile.files.length) {
+                //ファイル読み込みインスタンス作成
+                var fileReader = new FileReader();
+
+                //ファイルの読み込み成功時
+                fileReader.onload = function (e) {
+                    //ファイルの内容取得
+                    var fileValues = fileReader.result;
+
+                    console.log(fileValues);
+
+                    //ファイルを1行ずつに分割
+                    var splitValues = fileValues.split("\r\n");
+
+                    //ファイルの行数分だけ画面の行を追加
+                    for (var i = 0; i < splitValues.length; i++) {
+                        //行追加メソッド呼出し
+                        addRecord();
+                    }
+
+                    //ファイルの行数分だけループ
+                    for (var j = 0; j < splitValues.length; j++) {
+
+                        //1レコードをカンマ区切りに分割
+                        var splitValues2 = splitValues[j].split(",");
+
+                        console.log(splitValues2);
+
+                        //カラム数分ループ
+                        for (var k = 0; k < splitValues2.length; k++) {
+
+                            var idName = "record" + (j + 1);
+                            var className = "text" + (k + 1);
+                            //追加したレコードに値を設定
+                            document.getElementById(idName).getElementsByClassName(className)[0].value = splitValues2[k];
+                        }
+                    }
+                }
+
+                //ファイルの読み込み開始
+                fileReader.readAsText(uploadFile.files[0], "shift-jis");
+
+            }
+        }
+    </script>
+    <title>Javascriptで行を追加してファイルをダウンロードする</title>
+</head>
+
+<body>
+    <h1>Javascriptで行を追加してファイルをダウンロードする</h1>
+    <h2>そろそろエクセルマクロから脱却したかったので、htmlとJavascriptでエクセルlikeなモノを作成してみました。</h2>
+    <table>
+        <tr>
+            <td>ダウンロードファイル名</td>
+        </tr>
+        <td><input id="downloadFileNmae" type="text" name="downloadFileNmae" size="30" value="sample.txt" /></td>
+        <tr>
+            <td><input type="button" value="download" onclick="onClickDownload()" /></td>
+        </tr>
+        <tr>
+            <td><input type="button" value="行追加" onclick="addRecord()" /></td>
+        </tr>
+        <tr>
+            <td><input id="inputFile" type="file" /></td>
+        </tr>
+        <tr>
+            <td><input type="button" value="ファイル読み込み" onclick="inputFile()" /></td>
+        </tr>
+    </table>
+    </br>
+    <table>
+        <tr>
+            <td>title1</td>
+            <td>title2</td>
+            <td>title3</td>
+            <td>title4</td>
+            <td>title5</td>
+        </tr>
+        <tr id="baseLine"></tr>
+    </table>
+    <div id="errormessage"></div>
+</body>
+
+</html>
